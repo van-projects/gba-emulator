@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GBA Emulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .screen-container {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: #000;
+            border: 4px solid #2a2a3e;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .controls {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-label {
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #16213e;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: inline-block;
+        }
+
+        .file-label:hover {
+            background: #1f2d4d;
+            transform: translateY(-2px);
+        }
+
+        .info {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #2a2a3e;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #b4b4d5;
+        }
+
+        .info-value {
+            font-family: 'Courier New', monospace;
+            color: #fff;
+        }
+
+        .keymap {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            margin-top: 20px;
+        }
+
+        .keymap h3 {
+            margin-bottom: 15px;
+            color: #b4b4d5;
+        }
+
+        .keymap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .keymap-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #2a2a3e;
+            border-radius: 6px;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            button, .file-label {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 GBA Emulator</h1>
+        
+        <div class="screen-container">
+            <canvas id="screen"></canvas>
+        </div>
+        
+        <div class="controls">
+            <div class="button-group">
+                <label class="file-label" for="rom-file">
+                    📁 Load ROM
+                </label>
+                <input type="file" id="rom-file" accept=".gba">
+                
+                <button id="start-btn" disabled>▶ Start</button>
+                <button id="stop-btn" disabled>⏸ Stop</button>
+                <button id="reset-btn" disabled>🔄 Reset</button>
+                <button id="step-btn" disabled>⏭ Step</button>
+            </div>
+            <div class="status" id="status">No ROM loaded</div>
+        </div>
+        
+        <div class="info">
+            <div class="info-row">
+                <span class="info-label">FPS:</span>
+                <span class="info-value" id="fps">0</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">PC:</span>
+                <span class="info-value" id="pc">0x00000000</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Cycles:</span>
+                <span class="info-value" id="cycles">0</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Mode:</span>
+                <span class="info-value" id="mode">System</span>
+            </div>
+        </div>
+        
+        <div class="keymap">
+            <h3>Controls</h3>
+            <div class="keymap-grid">
+                <div class="keymap-item">
+                    <span>A</span>
+                    <span>Z</span>
+                </div>
+                <div class="keymap-item">
+                    <span>B</span>
+                    <span>X</span>
+                </div>
+                <div class="keymap-item">
+                    <span>Start</span>
+                    <span>Enter</span>
+                </div>
+                <div class="keymap-item">
+                    <span>Select</span>
+                    <span>Shift</span>
+                </div>
+                <div class="keymap-item">
+                    <span>D-Pad</span>
+                    <span>Arrow Keys</span>
+                </div>
+                <div class="keymap-item">
+                    <span>L</span>
+                    <span>A</span>
+                </div>
+                <div class="keymap-item">
+                    <span>R</span>
+                    <span>S</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { GBAEmulator } from './src/emulator.js';
+
+        const canvas = document.getElementById('screen');
+        const emulator = new GBAEmulator(canvas);
+
+        // UI elements
+        const romFile = document.getElementById('rom-file');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const stepBtn = document.getElementById('step-btn');
+        const status = document.getElementById('status');
+        const fpsDisplay = document.getElementById('fps');
+        const pcDisplay = document.getElementById('pc');
+        const cyclesDisplay = document.getElementById('cycles');
+        const modeDisplay = document.getElementById('mode');
+
+        // Load ROM
+        romFile.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                try {
+                    const buffer = await file.arrayBuffer();
+                    await emulator.loadROM(new Uint8Array(buffer));
+                    
+                    status.textContent = `Loaded: ${file.name}`;
+                    status.style.background = 'rgba(0, 255, 0, 0.2)';
+                    
+                    startBtn.disabled = false;
+                    resetBtn.disabled = false;
+                    stepBtn.disabled = false;
+                } catch (err) {
+                    status.textContent = `Error: ${err.message}`;
+                    status.style.background = 'rgba(255, 0, 0, 0.2)';
+                }
+            }
+        });
+
+        // Start emulation
+        startBtn.addEventListener('click', () => {
+            emulator.start();
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            stepBtn.disabled = true;
+            status.textContent = 'Running...';
+            status.style.background = 'rgba(0, 255, 0, 0.2)';
+        });
+
+        // Stop emulation
+        stopBtn.addEventListener('click', () => {
+            emulator.stop();
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            stepBtn.disabled = false;
+            status.textContent = 'Stopped';
+            status.style.background = 'rgba(255, 255, 0, 0.2)';
+        });
+
+        // Reset emulation
+        resetBtn.addEventListener('click', () => {
+            emulator.stop();
+            emulator.reset();
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            stepBtn.disabled = false;
+            status.textContent = 'Reset';
+            status.style.background = 'rgba(0, 0, 255, 0.2)';
+        });
+
+        // Step one instruction
+        stepBtn.addEventListener('click', () => {
+            emulator.step();
+            updateInfo();
+        });
+
+        // Update info display
+        function updateInfo() {
+            const state = emulator.getState();
+            fpsDisplay.textContent = state.fps;
+            pcDisplay.textContent = '0x' + state.cpu.pc.toString(16).toUpperCase().padStart(8, '0');
+            cyclesDisplay.textContent = state.cpu.cycles.toLocaleString();
+            
+            const modes = {
+                0x10: 'User',
+                0x11: 'FIQ',
+                0x12: 'IRQ',
+                0x13: 'Supervisor',
+                0x17: 'Abort',
+                0x1B: 'Undefined',
+                0x1F: 'System'
+            };
+            modeDisplay.textContent = modes[state.cpu.mode] || 'Unknown';
+        }
+
+        // Update info every 100ms
+        setInterval(updateInfo, 100);
+    </script>
+</body>
+</html>
